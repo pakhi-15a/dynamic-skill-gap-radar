@@ -9,14 +9,13 @@ pandas
 pyspark
 kafka-python
 
-# Resume parsing
-PyPDF2
-python-docx
+# Resume parsing - NLP-based
+pdfplumber
+spacy
 
-# Web
+# Web & API clients
 aiofiles
 requests
 
-# Optional for enhanced skill extraction
-# spacy
-# transformers
+# Note: After installing spacy, download the language model:
+# python -m spacy download en_core_web_sm
