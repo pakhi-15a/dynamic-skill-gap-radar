@@ -1,0 +1,19 @@
+{
+  "categories": [
+    "ml engineer"
+  ],
+  "regions": [
+    "us"
+  ],
+  "enabled": true,
+  "refresh_interval": 1000,
+  "sources": [
+    "remoteok",
+    "arbeitnow",
+    "wellfound",
+    "hackernews",
+    "adzuna",
+    "jsearch"
+  ],
+  "last_updated": "2026-03-12T19:26:19.316642"
+}

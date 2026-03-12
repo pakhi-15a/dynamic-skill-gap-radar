@@ -12,3 +12,10 @@ data/processed/
 
 # OS
 .DS_Store
+
+kafka*/
+logs/
+venv/
+__pycache__/
+.parquet
+.env

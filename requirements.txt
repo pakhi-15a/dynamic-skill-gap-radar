@@ -16,6 +16,11 @@ spacy
 # Web & API clients
 aiofiles
 requests
+beautifulsoup4
+
+# Scheduling/retry helpers
+apscheduler
+tenacity
 
 # Note: After installing spacy, download the language model:
 # python -m spacy download en_core_web_sm

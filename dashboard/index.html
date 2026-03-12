@@ -6,222 +6,398 @@
     <title>Skill Gap Radar - Live Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap');
+
+        :root {
+            color-scheme: dark;
+            --bg: #0b0f14;
+            --bg-soft: #101720;
+            --card: #121b26;
+            --card-strong: #0f1724;
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #e6edf3;
+            --muted: #9aa4b2;
+            --accent: #36d1dc;
+            --accent-2: #5b86e5;
+            --success: #37d09b;
+            --warning: #f7b955;
+            --danger: #f07d8c;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
             max-width: 1400px;
             margin: 0 auto;
-            padding: 20px;
-            background: #f5f5f5;
+            padding: 28px 22px 40px;
+            background: radial-gradient(circle at top, #182235 0%, #0b0f14 55%);
+            color: var(--text);
         }
+
         h1 {
-            color: #333;
+            color: var(--text);
             text-align: center;
+            letter-spacing: 0.02em;
+            margin-bottom: 8px;
         }
+
         h2 {
-            color: #444;
+            color: var(--text);
             margin-top: 0;
+            margin-bottom: 12px;
         }
+
         .main-container {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-top: 20px;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 24px;
+            margin-top: 24px;
         }
+
         .container {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            background: linear-gradient(160deg, rgba(18, 27, 38, 0.96), rgba(12, 18, 28, 0.98));
+            padding: 28px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: 0 20px 40px rgba(2, 6, 23, 0.5);
         }
+
         .status {
             text-align: center;
-            padding: 10px;
+            padding: 10px 14px;
             margin-bottom: 20px;
-            border-radius: 5px;
-            font-weight: bold;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 13px;
+            letter-spacing: 0.02em;
+            border: 1px solid transparent;
         }
+
         .status.connected {
-            background: #d4edda;
-            color: #155724;
+            background: rgba(55, 208, 155, 0.18);
+            color: var(--success);
+            border-color: rgba(55, 208, 155, 0.4);
         }
+
         .status.disconnected {
-            background: #f8d7da;
-            color: #721c24;
+            background: rgba(240, 125, 140, 0.15);
+            color: var(--danger);
+            border-color: rgba(240, 125, 140, 0.35);
         }
+
         #skillsChart {
             max-height: 400px;
         }
-        
+
+        .filter-panel {
+            margin-bottom: 16px;
+            padding: 16px;
+            border-radius: 14px;
+            background: rgba(15, 23, 36, 0.9);
+            border: 1px solid var(--border);
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .filter-group label {
+            display: block;
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--card-strong);
+            color: var(--text);
+            font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+            appearance: none;
+        }
+
+        .filter-group select {
+            background-image:
+                linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+                linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+            background-position: calc(100% - 16px) 50%, calc(100% - 10px) 50%;
+            background-size: 6px 6px, 6px 6px;
+            background-repeat: no-repeat;
+        }
+
+        .filter-actions {
+            margin-top: 14px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .apply-filters-btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 999px;
+            background: linear-gradient(120deg, var(--accent), var(--accent-2));
+            color: #0b0f14;
+            font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 0.02em;
+        }
+
+        .apply-filters-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .active-filters {
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .filter-chip {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(54, 209, 220, 0.16);
+            color: var(--accent);
+            border: 1px solid rgba(54, 209, 220, 0.4);
+        }
+
         /* Resume Upload Section */
         .upload-section {
             margin-bottom: 20px;
-            padding: 20px;
-            border: 2px dashed #ccc;
-            border-radius: 8px;
+            padding: 22px;
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
             text-align: center;
-            background: #fafafa;
+            background: rgba(10, 16, 24, 0.7);
+            transition: border-color 0.2s ease, background 0.2s ease;
         }
+
         .upload-section:hover {
-            border-color: #4CAF50;
-            background: #f0f8f0;
+            border-color: var(--accent);
+            background: rgba(14, 24, 34, 0.9);
         }
+
         .file-input-wrapper {
             margin: 15px 0;
         }
+
         .file-input {
             display: none;
         }
+
         .file-label {
             display: inline-block;
             padding: 12px 24px;
-            background: #4CAF50;
-            color: white;
-            border-radius: 5px;
+            background: rgba(55, 208, 155, 0.2);
+            color: var(--success);
+            border-radius: 999px;
             cursor: pointer;
-            font-weight: bold;
+            font-weight: 600;
+            border: 1px solid rgba(55, 208, 155, 0.4);
         }
+
         .file-label:hover {
-            background: #45a049;
+            background: rgba(55, 208, 155, 0.32);
         }
+
         .upload-btn {
             padding: 12px 30px;
-            background: #2196F3;
-            color: white;
+            background: linear-gradient(120deg, #60a5fa, #38bdf8);
+            color: #0b0f14;
             border: none;
-            border-radius: 5px;
+            border-radius: 999px;
             cursor: pointer;
-            font-weight: bold;
+            font-weight: 700;
             margin-left: 10px;
         }
+
         .upload-btn:hover {
-            background: #0b7dda;
+            filter: brightness(1.05);
         }
+
         .upload-btn:disabled {
-            background: #cccccc;
+            background: rgba(148, 163, 184, 0.4);
             cursor: not-allowed;
+            color: rgba(226, 232, 240, 0.7);
         }
-        
+
         /* Skill Gap Results */
         .results-section {
             display: none;
             margin-top: 20px;
         }
+
         .results-section.show {
             display: block;
         }
+
         .score-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(130deg, #1d2b64 0%, #3a7bd5 100%);
             color: white;
             padding: 20px;
-            border-radius: 8px;
+            border-radius: 14px;
             text-align: center;
             margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
         }
+
         .score-value {
             font-size: 48px;
             font-weight: bold;
             margin: 10px 0;
+            font-family: 'JetBrains Mono', monospace;
         }
+
         .skill-panel {
             margin-bottom: 20px;
-            padding: 15px;
-            border-radius: 8px;
-            background: #f9f9f9;
+            padding: 16px;
+            border-radius: 14px;
+            background: rgba(15, 23, 36, 0.9);
+            border: 1px solid var(--border);
         }
+
         .skill-panel h3 {
             margin-top: 0;
-            color: #333;
-            border-bottom: 2px solid #4CAF50;
+            color: var(--text);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             padding-bottom: 8px;
         }
+
         .skill-badge {
             display: inline-block;
             padding: 6px 12px;
             margin: 4px;
-            background: #4CAF50;
-            color: white;
-            border-radius: 4px;
-            font-size: 14px;
+            background: rgba(55, 208, 155, 0.18);
+            color: var(--success);
+            border-radius: 999px;
+            font-size: 13px;
+            border: 1px solid rgba(55, 208, 155, 0.4);
         }
+
         .skill-badge.missing {
-            background: #ff9800;
+            background: rgba(247, 185, 85, 0.2);
+            color: var(--warning);
+            border-color: rgba(247, 185, 85, 0.5);
         }
+
         .recommendation-item {
             padding: 12px;
             margin: 8px 0;
-            background: white;
-            border-left: 4px solid #2196F3;
-            border-radius: 4px;
+            background: rgba(7, 12, 20, 0.6);
+            border-left: 3px solid #60a5fa;
+            border-radius: 10px;
         }
+
         .recommendation-item.high {
-            border-left-color: #f44336;
+            border-left-color: var(--danger);
         }
+
         .recommendation-item.medium {
-            border-left-color: #ff9800;
+            border-left-color: var(--warning);
         }
+
         .priority-badge {
             display: inline-block;
             padding: 2px 8px;
-            border-radius: 3px;
-            font-size: 12px;
-            font-weight: bold;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
             margin-right: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
         }
+
         .priority-badge.high {
-            background: #f44336;
-            color: white;
+            background: rgba(240, 125, 140, 0.2);
+            color: var(--danger);
         }
+
         .priority-badge.medium {
-            background: #ff9800;
-            color: white;
+            background: rgba(247, 185, 85, 0.2);
+            color: var(--warning);
         }
+
         .error-message {
             padding: 15px;
-            background: #f8d7da;
-            color: #721c24;
-            border-radius: 5px;
+            background: rgba(240, 125, 140, 0.18);
+            color: var(--danger);
+            border-radius: 10px;
             margin: 10px 0;
+            border: 1px solid rgba(240, 125, 140, 0.35);
         }
+
         .success-message {
             padding: 15px;
-            background: #d4edda;
-            color: #155724;
-            border-radius: 5px;
+            background: rgba(55, 208, 155, 0.16);
+            color: var(--success);
+            border-radius: 10px;
             margin: 10px 0;
+            border: 1px solid rgba(55, 208, 155, 0.35);
         }
+
         .loading {
             text-align: center;
             padding: 20px;
-            color: #666;
+            color: var(--muted);
         }
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 10px;
             margin: 15px 0;
         }
+
         .stat-item {
             text-align: center;
             padding: 10px;
-            background: white;
-            border-radius: 5px;
+            background: rgba(10, 16, 24, 0.6);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
+
         .stat-value {
             font-size: 24px;
             font-weight: bold;
-            color: #4CAF50;
+            color: var(--accent);
         }
+
         .stat-label {
             font-size: 12px;
-            color: #666;
+            color: var(--muted);
         }
-        
-        @media (max-width: 768px) {
+
+        @media (max-width: 980px) {
             .main-container {
                 grid-template-columns: 1fr;
             }
+        }
+
+        @media (max-width: 768px) {
             .stats-grid {
                 grid-template-columns: 1fr;
+            }
+            .filter-grid {
+                grid-template-columns: 1fr;
+            }
+            .upload-btn {
+                margin-left: 0;
+                margin-top: 10px;
             }
         }
     </style>
@@ -234,6 +410,43 @@
         <div class="container">
             <h2>📊 Real-Time Job Market Demand</h2>
             <div id="status" class="status disconnected">Connecting to server...</div>
+
+            <div class="filter-panel">
+                <div class="filter-grid">
+                    <div class="filter-group">
+                        <label for="jobCategories">Job Category</label>
+                        <select id="jobCategories">
+                            <option value="">Select a category</option>
+                            <option value="data science">Data Science</option>
+                            <option value="software engineer">Software Engineer</option>
+                            <option value="ml engineer">ML Engineer</option>
+                            <option value="data analyst">Data Analyst</option>
+                            <option value="devops engineer">DevOps Engineer</option>
+                            <option value="full stack">Full Stack Developer</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="regions">Region</label>
+                        <select id="regions">
+                            <option value="">Select a region</option>
+                            <option value="us">United States</option>
+                            <option value="gb">United Kingdom</option>
+                            <option value="eu">Germany / EU</option>
+                            <option value="remote">Remote</option>
+                            <option value="global">Global</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="filter-actions">
+                    <div class="filter-group" style="margin: 0; min-width: 200px;">
+                        <label for="refreshInterval">Refresh Interval (seconds)</label>
+                        <input id="refreshInterval" type="number" min="300" step="300" value="10800">
+                    </div>
+                    <button id="applyFiltersBtn" class="apply-filters-btn">Apply Collection Filters</button>
+                </div>
+                <div id="activeFilters" class="active-filters"></div>
+            </div>
+
             <canvas id="skillsChart"></canvas>
         </div>
         
@@ -247,10 +460,10 @@
                 <div class="file-input-wrapper">
                     <input type="file" id="resumeFile" class="file-input" accept=".pdf,.docx,.doc,.txt">
                     <label for="resumeFile" class="file-label">Choose Resume File</label>
-                    <span id="fileName" style="margin-left: 10px; color: #666;"></span>
+                    <span id="fileName" style="margin-left: 10px; color: #9aa4b2;"></span>
                 </div>
                 <button id="uploadBtn" class="upload-btn" disabled>Analyze Resume</button>
-                <p style="font-size: 12px; color: #666; margin-top: 10px;">
+                <p style="font-size: 12px; color: #9aa4b2; margin-top: 10px;">
                     Supported formats: PDF, DOCX, TXT (Max 5MB)
                 </p>
             </div>
@@ -308,6 +521,11 @@
         const fileNameSpan = document.getElementById('fileName');
         const messageContainer = document.getElementById('messageContainer');
         const resultsSection = document.getElementById('resultsSection');
+        const categoriesSelect = document.getElementById('jobCategories');
+        const regionsSelect = document.getElementById('regions');
+        const refreshIntervalInput = document.getElementById('refreshInterval');
+        const applyFiltersBtn = document.getElementById('applyFiltersBtn');
+        const activeFiltersDiv = document.getElementById('activeFilters');
         
         let extractedSkills = [];
 
@@ -318,8 +536,8 @@
                 datasets: [{
                     label: 'Skill Demand Count',
                     data: [],
-                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 209, 220, 0.5)',
+                    borderColor: 'rgba(54, 209, 220, 1)',
                     borderWidth: 2
                 }]
             },
@@ -330,17 +548,33 @@
                     y: {
                         beginAtZero: true,
                         ticks: {
-                            stepSize: 1
+                            stepSize: 1,
+                            color: '#9aa4b2'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.08)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#9aa4b2'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.04)'
                         }
                     }
                 },
                 plugins: {
                     legend: {
-                        display: true
+                        display: true,
+                        labels: {
+                            color: '#e6edf3'
+                        }
                     },
                     title: {
                         display: true,
-                        text: 'Top Skills in Job Market'
+                        text: 'Top Skills in Job Market',
+                        color: '#e6edf3'
                     }
                 }
             }
@@ -354,6 +588,18 @@
                 updateChart(data);
             })
             .catch(error => console.error('Error loading initial data:', error));
+
+        // Load current collection filter settings.
+        fetch('/api/collection-status')
+            .then(response => response.json())
+            .then(data => {
+                const filters = data.filters || {};
+                setSelectValues(categoriesSelect, filters.categories || []);
+                setSelectValues(regionsSelect, filters.regions || []);
+                refreshIntervalInput.value = filters.refresh_interval || 10800;
+                renderActiveFilters(filters.categories || [], filters.regions || [], filters.refresh_interval || 10800);
+            })
+            .catch(error => console.error('Error loading filter status:', error));
 
         // Connect to WebSocket for live updates
         const socket = new WebSocket(`ws://${window.location.host}/ws`);
@@ -399,6 +645,77 @@
                 chart.update();
             }
         }
+
+        function setSelectValues(selectElement, values) {
+            const lowerValues = (values || []).map(v => String(v).toLowerCase());
+            const match = lowerValues.length ? lowerValues[0] : '';
+            Array.from(selectElement.options).forEach(option => {
+                option.selected = String(option.value).toLowerCase() === match;
+            });
+        }
+
+        function selectedValues(selectElement) {
+            return Array.from(selectElement.selectedOptions)
+                .map(opt => opt.value)
+                .filter(value => value);
+        }
+
+        function renderActiveFilters(categories, regions, refreshInterval) {
+            const chips = [];
+            categories.forEach(c => chips.push(`<span class="filter-chip">Category: ${c}</span>`));
+            regions.forEach(r => chips.push(`<span class="filter-chip">Region: ${r}</span>`));
+            chips.push(`<span class="filter-chip">Interval: ${refreshInterval}s</span>`);
+            activeFiltersDiv.innerHTML = chips.join('');
+        }
+
+        applyFiltersBtn.addEventListener('click', async function() {
+            const categories = selectedValues(categoriesSelect);
+            const regions = selectedValues(regionsSelect);
+            const refreshInterval = Number(refreshIntervalInput.value || 10800);
+
+            if (!categories.length) {
+                showMessage('Please select at least one job category.', 'error');
+                return;
+            }
+            if (!regions.length) {
+                showMessage('Please select at least one region.', 'error');
+                return;
+            }
+            if (refreshInterval < 300) {
+                showMessage('Refresh interval must be at least 300 seconds.', 'error');
+                return;
+            }
+
+            applyFiltersBtn.disabled = true;
+            applyFiltersBtn.textContent = 'Applying...';
+
+            try {
+                const response = await fetch('/api/update-filters', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        categories,
+                        regions,
+                        refresh_interval: refreshInterval,
+                        enabled: true,
+                        sources: ['remoteok', 'arbeitnow', 'wellfound', 'hackernews', 'adzuna', 'jsearch']
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to update filters');
+                }
+
+                renderActiveFilters(categories, regions, refreshInterval);
+                showMessage('Collection filters updated. New settings will apply on next collector cycle.', 'success');
+            } catch (error) {
+                showMessage(`Failed to apply filters: ${error.message}`, 'error');
+            } finally {
+                applyFiltersBtn.disabled = false;
+                applyFiltersBtn.textContent = 'Apply Collection Filters';
+            }
+        });
         
         // Resume upload functionality
         resumeFileInput.addEventListener('change', function(e) {
@@ -503,7 +820,7 @@
                     .map(skill => `<span class="skill-badge">${skill.skill} (${skill.demand_count})</span>`)
                     .join('');
             } else {
-                matchingSkillsDiv.innerHTML = '<p style="color: #666;">No matching skills found with current job market demand.</p>';
+                matchingSkillsDiv.innerHTML = '<p style="color: #9aa4b2;">No matching skills found with current job market demand.</p>';
             }
             
             // Display missing skills
@@ -514,7 +831,7 @@
                     .map(skill => `<span class="skill-badge missing">${skill.skill} (${skill.demand_count})</span>`)
                     .join('');
             } else {
-                missingSkillsDiv.innerHTML = '<p style="color: #666;">Great! You have all the in-demand skills.</p>';
+                missingSkillsDiv.innerHTML = '<p style="color: #9aa4b2;">Great! You have all the in-demand skills.</p>';
             }
             
             // Display recommendations
@@ -525,12 +842,12 @@
                         <div class="recommendation-item ${rec.priority.toLowerCase()}">
                             <span class="priority-badge ${rec.priority.toLowerCase()}">${rec.priority}</span>
                             <strong>${rec.skill}</strong>
-                            <div style="font-size: 14px; color: #666; margin-top: 5px;">${rec.reason}</div>
+                            <div style="font-size: 14px; color: #9aa4b2; margin-top: 5px;">${rec.reason}</div>
                         </div>
                     `)
                     .join('');
             } else {
-                recommendationsDiv.innerHTML = '<p style="color: #666;">No recommendations at this time.</p>';
+                recommendationsDiv.innerHTML = '<p style="color: #9aa4b2;">No recommendations at this time.</p>';
             }
             
             // Scroll to results

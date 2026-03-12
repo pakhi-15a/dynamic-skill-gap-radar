@@ -49,6 +49,27 @@ clients = []
 # Store current skill demand data (updated by Spark streaming processor)
 current_skill_demand = {}
 
+BASE_DIR = Path(__file__).parent.parent
+CONFIG_DIR = BASE_DIR / "config"
+LOGS_DIR = BASE_DIR / "logs"
+COLLECTION_FILTERS_FILE = CONFIG_DIR / "collection_filters.json"
+COLLECTION_METRICS_FILE = LOGS_DIR / "source_metrics.json"
+
+DEFAULT_COLLECTION_FILTERS = {
+    "categories": ["data science", "software engineer"],
+    "regions": ["us", "remote"],
+    "enabled": True,
+    "refresh_interval": 10800,
+    "sources": ["remoteok", "arbeitnow", "wellfound", "hackernews", "adzuna", "jsearch"],
+}
+
+CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
+
+if not COLLECTION_FILTERS_FILE.exists():
+    with open(COLLECTION_FILTERS_FILE, "w", encoding="utf-8") as f:
+        json.dump(DEFAULT_COLLECTION_FILTERS, f, indent=2)
+
 # Pydantic models
 class ResumeAnalysisRequest(BaseModel):
     resume_skills: Optional[List[str]] = None
@@ -56,6 +77,40 @@ class ResumeAnalysisRequest(BaseModel):
 
 class SkillGapRequest(BaseModel):
     resume_skills: List[str]
+
+
+class CollectionFilters(BaseModel):
+    categories: List[str] = ["data science", "software engineer"]
+    regions: List[str] = ["us", "remote"]
+    enabled: bool = True
+    refresh_interval: int = 10800
+    sources: List[str] = ["remoteok", "arbeitnow", "wellfound", "hackernews", "adzuna", "jsearch"]
+
+
+def _load_collection_filters() -> Dict:
+    try:
+        with open(COLLECTION_FILTERS_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception:
+        data = dict(DEFAULT_COLLECTION_FILTERS)
+
+    if not data.get("categories"):
+        data["categories"] = DEFAULT_COLLECTION_FILTERS["categories"]
+    if not data.get("regions"):
+        data["regions"] = DEFAULT_COLLECTION_FILTERS["regions"]
+    if not data.get("sources"):
+        data["sources"] = DEFAULT_COLLECTION_FILTERS["sources"]
+    if "enabled" not in data:
+        data["enabled"] = True
+    if not isinstance(data.get("refresh_interval"), int):
+        data["refresh_interval"] = DEFAULT_COLLECTION_FILTERS["refresh_interval"]
+
+    return data
+
+
+def _save_collection_filters(data: Dict) -> None:
+    with open(COLLECTION_FILTERS_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
 
 
 # CORS middleware
@@ -198,6 +253,61 @@ async def get_dashboard_data():
     return {
         "skills": market_data.get("skills", []),
         "counts": market_data.get("counts", []),
+    }
+
+
+# ================================================================
+# COLLECTION FILTER ENDPOINTS
+# ================================================================
+
+@app.get("/api/collection-status")
+async def get_collection_status():
+    """Get active collection filters and latest collector cycle stats."""
+    filters = _load_collection_filters()
+    metrics = {}
+
+    if COLLECTION_METRICS_FILE.exists():
+        try:
+            with open(COLLECTION_METRICS_FILE, "r", encoding="utf-8") as f:
+                metrics = json.load(f)
+        except Exception:
+            metrics = {}
+
+    return {
+        "filters": filters,
+        "collector_metrics": metrics,
+        "filters_file": str(COLLECTION_FILTERS_FILE.relative_to(BASE_DIR)),
+    }
+
+
+@app.post("/api/update-filters")
+async def update_collection_filters(payload: CollectionFilters):
+    """Persist dashboard-selected categories/regions used by the collector."""
+    categories = [c.strip().lower() for c in payload.categories if c and c.strip()]
+    regions = [r.strip().lower() for r in payload.regions if r and r.strip()]
+    sources = [s.strip().lower() for s in payload.sources if s and s.strip()]
+
+    if not categories:
+        raise HTTPException(status_code=400, detail="At least one category must be selected")
+    if not regions:
+        raise HTTPException(status_code=400, detail="At least one region must be selected")
+    if payload.refresh_interval < 300:
+        raise HTTPException(status_code=400, detail="refresh_interval must be at least 300 seconds")
+
+    updated = {
+        "categories": categories,
+        "regions": regions,
+        "enabled": payload.enabled,
+        "refresh_interval": payload.refresh_interval,
+        "sources": sources or DEFAULT_COLLECTION_FILTERS["sources"],
+        "last_updated": datetime.now().isoformat(),
+    }
+    _save_collection_filters(updated)
+
+    return {
+        "status": "ok",
+        "message": "Collection filters updated",
+        "filters": updated,
     }
 
 
